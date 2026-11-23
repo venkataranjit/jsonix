@@ -61,38 +61,16 @@
 <body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
 
   <!-- Header Header Nav -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 shrink-0">
     <div class="max-w-[1850px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
           <i data-lucide="binary" class="w-5 h-5 text-slate-950"></i>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            Jsonix <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono font-medium">Base64 &amp; Metadata Decoder</span>
+          <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+            Jsonix <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono font-medium">Base64 &amp; Metadata Decoder</span>
           </h1>
-          <p class="text-xs text-slate-400 hidden sm:block">Dynamic payload decrypter &amp; pipe-delimited attribute parser</p>
-        </div>
-      </div>
-
-      <!-- Quick Metrics Header Badge -->
-      <div id="metricsBar" class="hidden sm:flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-        <div class="flex items-center gap-1.5 text-slate-400">
-          <i data-lucide="key" class="w-3.5 h-3.5 text-cyan-400"></i>
-          <span>Keys:</span>
-          <span id="metricKeys" class="text-cyan-400 font-bold">0</span>
-        </div>
-        <div class="h-3 w-px bg-slate-800"></div>
-        <div class="flex items-center gap-1.5 text-slate-400">
-          <i data-lucide="unlock" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span>Base64 Decoded:</span>
-          <span id="metricBase64" class="text-emerald-400 font-bold">0</span>
-        </div>
-        <div class="h-3 w-px bg-slate-800"></div>
-        <div class="flex items-center gap-1.5 text-slate-400">
-          <i data-lucide="table" class="w-3.5 h-3.5 text-indigo-400"></i>
-          <span>Pipe Fields:</span>
-          <span id="metricPipeFields" class="text-indigo-400 font-bold">0</span>
         </div>
       </div>
     </div>
@@ -109,22 +87,28 @@
   <!-- Main Content Area -->
   <main class="flex-1 max-w-[1850px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col gap-6">
     
-    <!-- Top Action Toolbar -->
-    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-      <div class="flex flex-wrap items-center gap-2">
-        <button id="btnClear" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5 text-slate-400"></i> Clear
-        </button>
+    <!-- Status / Metrics Diagnostic Banner -->
+    <div id="statusBanner" class="transition-all duration-200 rounded-xl p-3 border flex flex-wrap items-center justify-between gap-3 bg-slate-900 border-slate-800 text-xs">
+      <div class="flex items-center gap-2.5">
+        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="statusTitle" class="font-bold text-slate-200">Ready to decode</span>
       </div>
-
-      <div class="flex items-center gap-4">
-        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
-          <input type="checkbox" id="chkAutoDecode" checked class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-950">
-          <span>Live Decode on Input</span>
-        </label>
-        <button id="btnManualDecode" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-lg transition flex items-center gap-1.5">
-          <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Decode Now
-        </button>
+      <div id="metricsBar" class="flex flex-wrap items-center gap-3 font-mono text-[11px]">
+        <div class="flex items-center gap-1 text-slate-400" title="Total object and array keys">
+          <i data-lucide="key" class="w-3 h-3 text-cyan-400"></i>
+          <span>Keys:</span>
+          <strong id="metricKeys" class="text-cyan-400">0</strong>
+        </div>
+        <div class="flex items-center gap-1 text-slate-400" title="Base64 values decoded">
+          <i data-lucide="unlock" class="w-3 h-3 text-emerald-400"></i>
+          <span>Base64 Decoded:</span>
+          <strong id="metricBase64" class="text-emerald-400">0</strong>
+        </div>
+        <div class="flex items-center gap-1 text-slate-400" title="Pipe-delimited fields found">
+          <i data-lucide="table" class="w-3 h-3 text-indigo-400"></i>
+          <span>Pipe Fields:</span>
+          <strong id="metricPipeFields" class="text-indigo-400">0</strong>
+        </div>
       </div>
     </div>
 
@@ -133,13 +117,18 @@
       
       <!-- LEFT COLUMN: JSON Input & Sanitizer -->
       <div class="lg:col-span-5 flex flex-col gap-3">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <label for="jsonInput" class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <i data-lucide="code-2" class="w-4 h-4 text-cyan-400"></i> Input Payload / Snippet
           </label>
-          <span id="inputStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-400">
-            Ready
-          </span>
+          <div class="flex items-center gap-2">
+            <span id="inputStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-400">
+              Ready
+            </span>
+            <button id="btnClear" class="px-2 py-1 text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded border border-slate-700 transition flex items-center gap-1" title="Clear input" aria-label="Clear input">
+              <i data-lucide="trash-2" class="w-3 h-3"></i>
+            </button>
+          </div>
         </div>
 
         <div class="relative flex-1 flex flex-col">
@@ -253,7 +242,6 @@
     const inputStatusBadge = document.getElementById('inputStatusBadge');
     const cardsContainer = document.getElementById('cardsContainer');
     const jsonCodeOutput = document.getElementById('jsonCodeOutput');
-    const chkAutoDecode = document.getElementById('chkAutoDecode');
     const cardFilterInput = document.getElementById('cardFilterInput');
     
     // View Tab Buttons
@@ -283,18 +271,13 @@
 
       // Event listeners
       jsonInput.addEventListener('input', () => {
-        if (chkAutoDecode.checked) processInput();
+        processInput();
       });
 
       document.getElementById('btnClear').addEventListener('click', () => {
         jsonInput.value = '';
         processInput();
         showToast("Cleared input area");
-      });
-
-      document.getElementById('btnManualDecode').addEventListener('click', () => {
-        processInput();
-        showToast("Payload processed");
       });
 
       // Tab switching

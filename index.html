@@ -1,299 +1,497 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080d18">
-  <meta name="description" content="Jsonix brings together tools for API logs, JSON formatting and inspection, and Base64 metadata decoding.">
-  <title>Jsonix — API &amp; JSON developer tools</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #080d18;
-      color: #e2e8f0;
-      font-synthesis: none;
-      text-rendering: optimizeLegibility;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080d18" />
+    <meta
+      name="description"
+      content="Jsonix brings together tools for API logs, JSON formatting and inspection, and Base64 metadata decoding."
+    />
+    <title>Jsonix — API &amp; JSON developer tools</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: #080d18;
+        color: #e2e8f0;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+      }
 
-    * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      min-width: 320px;
-      min-height: 100vh;
-      margin: 0;
-      background:
-        radial-gradient(ellipse at 50% -20%, rgba(56, 189, 248, .16), transparent 55%),
-        #080d18;
-    }
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(
+            ellipse at 50% 0%,
+            rgba(56, 189, 248, 0.14),
+            transparent 48%
+          ),
+          radial-gradient(
+            ellipse at 8% 52%,
+            rgba(99, 102, 241, 0.08),
+            transparent 36%
+          ),
+          #080d18;
+      }
 
-    a { color: inherit; text-decoration: none; }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
 
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      border-bottom: 1px solid #1e293b;
-      background: rgba(15, 23, 42, .88);
-      backdrop-filter: blur(14px);
-    }
+      body::before {
+        position: fixed;
+        z-index: -1;
+        inset: 0;
+        background-image: radial-gradient(
+          rgba(148, 163, 184, 0.2) 0.8px,
+          transparent 0.8px
+        );
+        background-size: 24px 24px;
+        content: "";
+        mask-image: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.7),
+          transparent 86%
+        );
+        pointer-events: none;
+      }
 
-    .nav, main, .footer-inner {
-      width: min(1120px, calc(100% - 40px));
-      margin: 0 auto;
-    }
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: 1px solid #1e293b;
+        background: rgba(15, 23, 42, 0.88);
+        backdrop-filter: blur(14px);
+      }
 
-    .nav {
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
+      .nav,
+      main,
+      .footer-inner {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
 
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 11px;
-      color: #f8fafc;
-      font-size: 17px;
-      font-weight: 750;
-      letter-spacing: -.04em;
-    }
+      .nav {
+        min-height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
 
-    .brand-mark {
-      display: grid;
-      width: 36px;
-      height: 36px;
-      place-items: center;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1, #38bdf8);
-      color: #07111f;
-      font-size: 18px;
-      font-weight: 900;
-    }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        color: #f8fafc;
+        font-size: 17px;
+        font-weight: 750;
+        letter-spacing: -0.04em;
+      }
 
-    .nav-link {
-      color: #7dd3fc;
-      font-size: 13px;
-      font-weight: 650;
-    }
+      .brand-mark {
+        display: grid;
+        width: 35px;
+        height: 35px;
+        place-items: center;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1, #38bdf8);
+        color: #07111f;
+        font-size: 18px;
+        font-weight: 900;
+      }
 
-    main { padding: 82px 0 76px; }
+      .nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 10px;
+        background: rgba(14, 165, 233, 0.08);
+        color: #7dd3fc;
+        font-size: 13px;
+        font-weight: 650;
+        transition:
+          border-color 0.2s ease,
+          background 0.2s ease;
+      }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: #7dd3fc;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
+      .nav-link:hover,
+      .nav-link:focus-visible {
+        border-color: rgba(56, 189, 248, 0.48);
+        background: rgba(14, 165, 233, 0.16);
+        outline: none;
+      }
 
-    .eyebrow::before {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #38bdf8;
-      content: "";
-      box-shadow: 0 0 14px #38bdf8;
-    }
+      main {
+        padding: 64px 0 60px;
+      }
 
-    h1 {
-      max-width: 760px;
-      margin: 20px 0 16px;
-      color: #f8fafc;
-      font-size: clamp(42px, 7vw, 72px);
-      line-height: 1.02;
-      letter-spacing: -.065em;
-    }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #7dd3fc;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
 
-    h1 span {
-      background: linear-gradient(90deg, #a5b4fc, #38bdf8);
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+      .eyebrow::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #38bdf8;
+        content: "";
+        box-shadow: 0 0 14px #38bdf8;
+      }
 
-    .intro {
-      max-width: 620px;
-      margin: 0;
-      color: #94a3b8;
-      font-size: 17px;
-      line-height: 1.7;
-    }
+      h1 {
+        max-width: 760px;
+        margin: 16px 0 12px;
+        color: #f8fafc;
+        font-size: clamp(42px, 6vw, 68px);
+        line-height: 1.02;
+        letter-spacing: -0.065em;
+      }
 
-    .section-heading {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 20px;
-      margin: 64px 0 20px;
-    }
+      h1 span {
+        background: linear-gradient(90deg, #a5b4fc, #38bdf8);
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
 
-    .section-heading h2 {
-      margin: 0;
-      color: #f1f5f9;
-      font-size: 19px;
-      letter-spacing: -.025em;
-    }
+      .intro {
+        max-width: 620px;
+        margin: 0;
+        color: #94a3b8;
+        font-size: 16px;
+        line-height: 1.65;
+      }
 
-    .section-heading p {
-      margin: 0;
-      color: #64748b;
-      font-size: 12px;
-    }
+      .section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        margin: 44px 0 17px;
+      }
 
-    .tool-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
+      .section-heading h2 {
+        margin: 0;
+        color: #f1f5f9;
+        font-size: 19px;
+        letter-spacing: -0.025em;
+      }
 
-    .tool-card {
-      display: flex;
-      min-height: 235px;
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 23px;
-      border: 1px solid #263449;
-      border-radius: 17px;
-      background: linear-gradient(145deg, rgba(20, 31, 51, .92), rgba(13, 20, 34, .94));
-      transition: border-color .2s ease, transform .2s ease, background .2s ease;
-    }
+      .section-heading p {
+        margin: 0;
+        color: #64748b;
+        font-size: 12px;
+      }
 
-    .tool-card:hover, .tool-card:focus-visible {
-      transform: translateY(-3px);
-      border-color: #0284c7;
-      background: linear-gradient(145deg, rgba(23, 43, 66, .96), rgba(13, 20, 34, .96));
-      outline: none;
-    }
+      .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
 
-    .tool-icon {
-      display: grid;
-      width: 42px;
-      height: 42px;
-      place-items: center;
-      border: 1px solid rgba(56, 189, 248, .2);
-      border-radius: 13px;
-      background: rgba(14, 165, 233, .12);
-      color: #7dd3fc;
-      font-size: 19px;
-    }
+      .tool-card {
+        display: flex;
+        min-height: 215px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 23px;
+        border: 1px solid rgba(71, 85, 105, 0.52);
+        border-radius: 17px;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(
+            circle at 100% 0%,
+            rgba(56, 189, 248, 0.08),
+            transparent 42%
+          ),
+          linear-gradient(
+            145deg,
+            rgba(20, 31, 51, 0.94),
+            rgba(13, 20, 34, 0.96)
+          );
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.13);
+        transition:
+          border-color 0.2s ease,
+          transform 0.2s ease,
+          background 0.2s ease,
+          box-shadow 0.2s ease;
+      }
 
-    .tool-card h3 {
-      margin: 20px 0 8px;
-      color: #f8fafc;
-      font-size: 16px;
-      letter-spacing: -.02em;
-    }
+      .tool-card::before {
+        position: absolute;
+        top: 0;
+        right: 18px;
+        left: 18px;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(56, 189, 248, 0.48),
+          transparent
+        );
+        content: "";
+      }
 
-    .tool-card p {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 13px;
-      line-height: 1.65;
-    }
+      .tool-card:hover,
+      .tool-card:focus-visible {
+        transform: translateY(-3px);
+        border-color: #0284c7;
+        background: linear-gradient(
+          145deg,
+          rgba(23, 43, 66, 0.96),
+          rgba(13, 20, 34, 0.96)
+        );
+        box-shadow: 0 20px 42px rgba(2, 132, 199, 0.12);
+        outline: none;
+      }
 
-    .card-link {
-      display: flex;
-      width: 100%;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: auto;
-      padding-top: 21px;
-      color: #7dd3fc;
-      font-size: 12px;
-      font-weight: 700;
-    }
+      .tool-icon {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 13px;
+        background: rgba(14, 165, 233, 0.12);
+        color: #7dd3fc;
+        font-size: 19px;
+      }
 
-    .tool-note {
-      margin: 17px 0 0;
-      color: #64748b;
-      font-size: 12px;
-      line-height: 1.6;
-    }
+      .tool-card h3 {
+        margin: 15px 0 8px;
+        color: #f8fafc;
+        font-size: 16px;
+        letter-spacing: -0.02em;
+      }
 
-    footer {
-      border-top: 1px solid #1e293b;
-      color: #64748b;
-      font-size: 12px;
-    }
+      .tool-card p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.65;
+      }
 
-    .footer-inner {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 22px 0;
-    }
+      .card-link {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 21px;
+        color: #7dd3fc;
+        font-size: 12px;
+        font-weight: 700;
+      }
 
-    @media (max-width: 760px) {
-      main { padding: 60px 0; }
-      .tool-grid { grid-template-columns: 1fr; }
-      .tool-card { min-height: 210px; }
-      .section-heading { align-items: flex-start; flex-direction: column; }
-    }
+      .tool-note {
+        margin: 17px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.6;
+      }
 
-    @media (max-width: 480px) {
-      .nav, main, .footer-inner { width: min(100% - 28px, 1120px); }
-      .nav { min-height: 60px; }
-      main { padding-top: 48px; }
-      .intro { font-size: 15px; }
-      .footer-inner { flex-direction: column; }
-    }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <nav class="nav" aria-label="Main navigation">
-      <a class="brand" href="index.html" aria-label="Jsonix home">
-        <span class="brand-mark" aria-hidden="true">{ }</span>
-        <span>Jsonix</span>
-      </a>
-      <a class="nav-link" href="#tools-heading">Explore tools <span aria-hidden="true">↓</span></a>
-    </nav>
-  </header>
+      footer {
+        border-top: 1px solid #1e293b;
+        color: #64748b;
+        font-size: 12px;
+      }
 
-  <main>
-    <span class="eyebrow">A developer workspace</span>
-    <h1>Make sense of your <span>JSON.</span></h1>
-    <p class="intro">A small collection of focused tools for understanding API logs, formatting and exploring JSON, and decoding Base64 metadata.</p>
+      footer a {
+        color: #7dd3fc;
+        text-decoration: none;
+      }
 
-    <section aria-labelledby="tools-heading">
-      <div class="section-heading">
-        <h2 id="tools-heading">Your tools</h2>
-        <p>Choose a workspace to get started</p>
+      footer a:hover, footer a:focus-visible {
+        color: #bae6fd;
+        text-decoration-color: currentColor;
+      }
+
+      .footer-inner {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 22px 0;
+      }
+
+      @media (min-width: 761px) and (min-height: 600px) {
+        body {
+          height: 100vh;
+          height: 100svh;
+          min-height: 480px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        main {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          justify-content: center;
+          padding: clamp(20px, 3.5vh, 34px) 0;
+        }
+
+        .section-heading {
+          margin-top: clamp(27px, 4.5vh, 38px);
+        }
+        .tool-card {
+          min-height: clamp(180px, 25vh, 205px);
+        }
+        .footer-inner {
+          padding: 13px 0;
+        }
+      }
+
+      @media (max-width: 760px) {
+        main {
+          padding: 60px 0;
+        }
+        .tool-grid {
+          grid-template-columns: 1fr;
+        }
+        .tool-card {
+          min-height: 210px;
+        }
+        .section-heading {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .nav,
+        main,
+        .footer-inner {
+          width: min(100% - 28px, 1120px);
+        }
+        .nav {
+          min-height: 60px;
+        }
+        .nav-link {
+          padding: 8px 10px;
+          font-size: 12px;
+        }
+        main {
+          padding-top: 48px;
+        }
+        .intro {
+          font-size: 15px;
+        }
+        .footer-inner {
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="Jsonix home">
+          <span class="brand-mark" aria-hidden="true">{ }</span>
+          <span>Jsonix</span>
+        </a>
+        <a class="nav-link" href="#tools-heading"
+          >Explore tools <span aria-hidden="true">↓</span></a
+        >
+      </nav>
+    </header>
+
+    <main>
+      <span class="eyebrow">A developer workspace</span>
+      <h1>Make sense of your <span>JSON.</span></h1>
+      <p class="intro">
+        A small collection of focused tools for understanding API logs,
+        formatting and exploring JSON, and decoding Base64 metadata.
+      </p>
+
+      <section aria-labelledby="tools-heading">
+        <div class="section-heading">
+          <h2 id="tools-heading">Your tools</h2>
+          <p>Choose a workspace to get started</p>
+        </div>
+        <div class="tool-grid">
+          <a class="tool-card" href="api-json-studio.html">
+            <span class="tool-icon" aria-hidden="true">{ }</span>
+            <h3>API &amp; JSON Studio</h3>
+            <p>
+              Format API logs, inspect JSON structure, review payload metrics,
+              and export your data.
+            </p>
+            <span class="card-link"
+              >Open studio <span aria-hidden="true">→</span></span
+            >
+          </a>
+          <a class="tool-card" href="json-formatter-tree-inspector.html">
+            <span class="tool-icon" aria-hidden="true">⌘</span>
+            <h3>JSON Formatter &amp; Tree Inspector</h3>
+            <p>
+              Validate and format JSON, inspect nested data in a tree, and copy
+              or export the result.
+            </p>
+            <span class="card-link"
+              >Open JSON formatter <span aria-hidden="true">→</span></span
+            >
+          </a>
+          <a class="tool-card" href="base64-json-metadata-decoder.html">
+            <span class="tool-icon" aria-hidden="true">↔</span>
+            <h3>Base64 JSON Metadata Decoder</h3>
+            <p>
+              Decode Base64 values nested in JSON and inspect pipe-delimited
+              metadata fields.
+            </p>
+            <span class="card-link"
+              >Open metadata decoder <span aria-hidden="true">→</span></span
+            >
+          </a>
+        </div>
+        <p class="tool-note">
+          All tools run in your browser and open as standalone workspaces.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <span>Jsonix · API &amp; JSON tools</span>
+        <span>
+          Designed &amp; developed by
+          <a href="https://venkataranjit.netlify.app/" target="_blank" rel="noopener noreferrer">Venkata Ranjit</a>
+        </span>
       </div>
-      <div class="tool-grid">
-        <a class="tool-card" href="api-json-studio.html">
-          <span class="tool-icon" aria-hidden="true">{ }</span>
-          <h3>API &amp; JSON Studio</h3>
-          <p>Format API logs, inspect JSON structure, review payload metrics, and export your data.</p>
-          <span class="card-link">Open studio <span aria-hidden="true">→</span></span>
-        </a>
-        <a class="tool-card" href="json-formatter-tree-inspector.html">
-          <span class="tool-icon" aria-hidden="true">⌘</span>
-          <h3>JSON Formatter &amp; Tree Inspector</h3>
-          <p>Validate and format JSON, inspect nested data in a tree, and copy or export the result.</p>
-          <span class="card-link">Open JSON formatter <span aria-hidden="true">→</span></span>
-        </a>
-        <a class="tool-card" href="base64-json-metadata-decoder.html">
-          <span class="tool-icon" aria-hidden="true">↔</span>
-          <h3>Base64 JSON Metadata Decoder</h3>
-          <p>Decode Base64 values nested in JSON and inspect pipe-delimited metadata fields.</p>
-          <span class="card-link">Open metadata decoder <span aria-hidden="true">→</span></span>
-        </a>
-      </div>
-      <p class="tool-note">All tools run in your browser and open as standalone workspaces.</p>
-    </section>
-  </main>
-
-  <footer>
-    <div class="footer-inner">
-      <span>Jsonix · API &amp; JSON tools</span>
-      <span>Built for clearer payloads.</span>
-    </div>
-  </footer>
-</body>
+    </footer>
+  </body>
 </html>
