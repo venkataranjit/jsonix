@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jsonix — Base64 JSON Metadata Decoder</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffaff',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              900: '#164e63',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts for crisp code font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom scrollbar for dark developer UI */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .syntax-key { color: #38bdf8; }
+    .syntax-string { color: #4ade80; }
+    .syntax-number { color: #facc15; }
+    .syntax-boolean { color: #f472b6; }
+    .syntax-null { color: #94a3b8; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Header Header Nav -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-[1850px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i data-lucide="binary" class="w-5 h-5 text-slate-950"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Jsonix <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono font-medium">Base64 &amp; Metadata Decoder</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Dynamic payload decrypter &amp; pipe-delimited attribute parser</p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Header Badge -->
+      <div id="metricsBar" class="hidden sm:flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+        <div class="flex items-center gap-1.5 text-slate-400">
+          <i data-lucide="key" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>Keys:</span>
+          <span id="metricKeys" class="text-cyan-400 font-bold">0</span>
+        </div>
+        <div class="h-3 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-1.5 text-slate-400">
+          <i data-lucide="unlock" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Base64 Decoded:</span>
+          <span id="metricBase64" class="text-emerald-400 font-bold">0</span>
+        </div>
+        <div class="h-3 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-1.5 text-slate-400">
+          <i data-lucide="table" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Pipe Fields:</span>
+          <span id="metricPipeFields" class="text-indigo-400 font-bold">0</span>
+        </div>
+      </div>
+    </div>
+    <nav aria-label="Main navigation" class="border-t border-slate-800/80">
+      <div class="max-w-[1850px] mx-auto px-4 sm:px-6 h-10 flex items-center gap-2 overflow-x-auto text-xs font-medium">
+        <a href="index.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">Home</a>
+        <a href="api-json-studio.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">API &amp; JSON Studio</a>
+        <a href="json-formatter-tree-inspector.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">JSON Formatter</a>
+        <a href="base64-json-metadata-decoder.html" aria-current="page" class="shrink-0 rounded-md px-3 py-1.5 text-cyan-300 bg-cyan-500/10 transition">Base64 Metadata Decoder</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-[1850px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col gap-6">
+    
+    <!-- Top Action Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnClear" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5 text-slate-400"></i> Clear
+        </button>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
+          <input type="checkbox" id="chkAutoDecode" checked class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-950">
+          <span>Live Decode on Input</span>
+        </label>
+        <button id="btnManualDecode" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-lg transition flex items-center gap-1.5">
+          <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Decode Now
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Grid: Input Pane + Output Inspector Pane -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-[500px]">
+      
+      <!-- LEFT COLUMN: JSON Input & Sanitizer -->
+      <div class="lg:col-span-5 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <label for="jsonInput" class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="code-2" class="w-4 h-4 text-cyan-400"></i> Input Payload / Snippet
+          </label>
+          <span id="inputStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-400">
+            Ready
+          </span>
+        </div>
+
+        <div class="relative flex-1 flex flex-col">
+          <textarea 
+            id="jsonInput" 
+            placeholder='Paste JSON here... Can be a standard JSON object, a raw snippet like "order_metadata": { ... }, or a string with nested Base64 values.'
+            spellcheck="false"
+            class="w-full flex-1 min-h-[350px] lg:min-h-full p-4 font-mono text-xs bg-slate-900 text-slate-200 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 resize-y leading-relaxed transition"
+          ></textarea>
+        </div>
+
+        <!-- Sanitize notice / tips -->
+        <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2.5">
+          <i data-lucide="info" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+          <div>
+            <p class="font-medium text-slate-300">Smart Sanitizer Active</p>
+            <p class="text-[11px] leading-normal text-slate-400">
+              Unwrapped key-value pairs like <code class="bg-slate-800 text-cyan-300 px-1 py-0.5 rounded font-mono">"order_metadata": { ... }</code> or trailing commas are auto-repaired into valid JSON prior to parsing.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Dual Output Views (Visual Cards vs JSON Output) -->
+      <div class="lg:col-span-7 flex flex-col gap-3">
+        
+        <!-- Output View Header Tabs -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-2">
+          <!-- View Toggle Buttons -->
+          <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+            <button id="tabVisual" class="px-3 py-1.5 text-xs font-medium rounded-md bg-slate-800 text-cyan-400 shadow transition flex items-center gap-1.5">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Visual Inspector
+            </button>
+            <button id="tabJson" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+              <i data-lucide="file-json" class="w-3.5 h-3.5"></i> Formatted JSON
+            </button>
+          </div>
+
+          <!-- Output Search & Controls -->
+          <div class="flex items-center gap-2">
+            <!-- Filter box for Visual tab -->
+            <div id="searchBoxContainer" class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="cardFilterInput" placeholder="Filter keys/values..." class="pl-8 pr-3 py-1 text-xs bg-slate-900 border border-slate-800 text-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500 w-36 sm:w-48">
+            </div>
+
+            <!-- Expand/Collapse for Cards -->
+            <div id="cardToggleGroup" class="flex items-center gap-1">
+              <button id="btnExpandAll" title="Expand All" class="p-1.5 text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 rounded-md hover:bg-slate-800 transition">
+                <i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i>
+              </button>
+              <button id="btnCollapseAll" title="Collapse All" class="p-1.5 text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 rounded-md hover:bg-slate-800 transition">
+                <i data-lucide="chevrons-up" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- JSON Mode Toggle (Visible on JSON tab) -->
+            <div id="jsonModeGroup" class="hidden items-center gap-2 bg-slate-900 px-2 py-1 rounded-md border border-slate-800 text-xs">
+              <span class="text-slate-400 text-[11px]">Mode:</span>
+              <button id="btnJsonModeParsed" class="text-xs text-cyan-400 font-medium hover:underline">Parsed Object</button>
+              <span class="text-slate-700">|</span>
+              <button id="btnJsonModeRaw" class="text-xs text-slate-400 hover:text-slate-200">Flat Decoded</button>
+            </div>
+
+            <!-- Copy JSON Button -->
+            <button id="btnCopyFullOutput" title="Copy Output JSON" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 transition flex items-center gap-1">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: Visual Inspector (Cards View) -->
+        <div id="viewVisual" class="flex-1 flex flex-col gap-4 overflow-y-auto max-h-[700px] pr-1">
+          <!-- Render Cards Container -->
+          <div id="cardsContainer" class="flex flex-col gap-4">
+            <!-- Empty Placeholder -->
+            <div class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl p-6 bg-slate-900/20">
+              <div class="h-12 w-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-3">
+                <i data-lucide="terminal" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-300">No Metadata Payload Parsed</h3>
+              <p class="text-xs text-slate-500 max-w-sm mt-1">Paste a JSON payload in the input panel to decode and inspect its contents.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: Formatted Syntax Highlighted JSON -->
+        <div id="viewJson" class="hidden flex-1 flex-col relative">
+          <pre id="jsonCodeOutput" class="w-full h-full min-h-[450px] max-h-[700px] overflow-auto p-4 font-mono text-xs bg-slate-900 text-slate-200 border border-slate-800 rounded-xl leading-relaxed select-text"></pre>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-cyan-500/40 shadow-xl shadow-cyan-950/50 text-xs font-medium">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Action completed successfully</span>
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script>
+    // --- GLOBAL STATE ---
+    let parsedTree = null; // Decoded object structure
+    let currentTab = 'visual'; // 'visual' | 'json'
+    let jsonOutputMode = 'parsed'; // 'parsed' | 'raw'
+
+    // --- DOM ELEMENTS ---
+    const jsonInput = document.getElementById('jsonInput');
+    const inputStatusBadge = document.getElementById('inputStatusBadge');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const jsonCodeOutput = document.getElementById('jsonCodeOutput');
+    const chkAutoDecode = document.getElementById('chkAutoDecode');
+    const cardFilterInput = document.getElementById('cardFilterInput');
+    
+    // View Tab Buttons
+    const tabVisual = document.getElementById('tabVisual');
+    const tabJson = document.getElementById('tabJson');
+    const viewVisual = document.getElementById('viewVisual');
+    const viewJson = document.getElementById('viewJson');
+    const searchBoxContainer = document.getElementById('searchBoxContainer');
+    const cardToggleGroup = document.getElementById('cardToggleGroup');
+    const jsonModeGroup = document.getElementById('jsonModeGroup');
+    const btnJsonModeParsed = document.getElementById('btnJsonModeParsed');
+    const btnJsonModeRaw = document.getElementById('btnJsonModeRaw');
+
+    // Metrics Bar
+    const metricKeys = document.getElementById('metricKeys');
+    const metricBase64 = document.getElementById('metricBase64');
+    const metricPipeFields = document.getElementById('metricPipeFields');
+
+    // Toast
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      processInput();
+
+      // Event listeners
+      jsonInput.addEventListener('input', () => {
+        if (chkAutoDecode.checked) processInput();
+      });
+
+      document.getElementById('btnClear').addEventListener('click', () => {
+        jsonInput.value = '';
+        processInput();
+        showToast("Cleared input area");
+      });
+
+      document.getElementById('btnManualDecode').addEventListener('click', () => {
+        processInput();
+        showToast("Payload processed");
+      });
+
+      // Tab switching
+      tabVisual.addEventListener('click', () => switchTab('visual'));
+      tabJson.addEventListener('click', () => switchTab('json'));
+
+      // JSON mode switching
+      btnJsonModeParsed.addEventListener('click', () => {
+        jsonOutputMode = 'parsed';
+        btnJsonModeParsed.className = "text-xs text-cyan-400 font-medium hover:underline";
+        btnJsonModeRaw.className = "text-xs text-slate-400 hover:text-slate-200";
+        renderJsonView();
+      });
+
+      btnJsonModeRaw.addEventListener('click', () => {
+        jsonOutputMode = 'raw';
+        btnJsonModeRaw.className = "text-xs text-cyan-400 font-medium hover:underline";
+        btnJsonModeParsed.className = "text-xs text-slate-400 hover:text-slate-200";
+        renderJsonView();
+      });
+
+      // Filter input listener
+      cardFilterInput.addEventListener('input', filterCards);
+
+      // Expand / Collapse all
+      document.getElementById('btnExpandAll').addEventListener('click', () => toggleAllCards(true));
+      document.getElementById('btnCollapseAll').addEventListener('click', () => toggleAllCards(false));
+
+      // Copy Full Output JSON
+      document.getElementById('btnCopyFullOutput').addEventListener('click', () => {
+        if (!parsedTree) return;
+        const targetObj = jsonOutputMode === 'parsed' ? parsedTree.parsedObj : parsedTree.flatDecodedObj;
+        copyToClipboard(JSON.stringify(targetObj, null, 2), "Full JSON copied to clipboard!");
+      });
+    });
+
+    // --- TAB SWITCHER ---
+    function switchTab(tab) {
+      currentTab = tab;
+      if (tab === 'visual') {
+        tabVisual.className = "px-3 py-1.5 text-xs font-medium rounded-md bg-slate-800 text-cyan-400 shadow transition flex items-center gap-1.5";
+        tabJson.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+        viewVisual.classList.remove('hidden');
+        viewJson.classList.add('hidden');
+        searchBoxContainer.classList.remove('hidden');
+        cardToggleGroup.classList.remove('hidden');
+        jsonModeGroup.classList.add('hidden');
+      } else {
+        tabJson.className = "px-3 py-1.5 text-xs font-medium rounded-md bg-slate-800 text-cyan-400 shadow transition flex items-center gap-1.5";
+        tabVisual.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+        viewVisual.classList.add('hidden');
+        viewJson.classList.remove('hidden');
+        searchBoxContainer.classList.add('hidden');
+        cardToggleGroup.classList.add('hidden');
+        jsonModeGroup.classList.remove('hidden');
+        jsonModeGroup.classList.add('flex');
+        renderJsonView();
+      }
+    }
+
+    // --- BASE64 & UTILITIES ---
+
+    // Safe Base64 validator and UTF-8 decoder
+    function tryDecodeBase64(str) {
+      if (typeof str !== 'string') return null;
+      const trimmed = str.trim();
+      
+      // Basic length check and Base64 regex (supporting standard & URL-safe)
+      if (trimmed.length < 4 || trimmed.length % 4 === 1) return null;
+      if (!/^[A-Za-z0-9+/_-]+=*$/.test(trimmed)) return null;
+
+      try {
+        // Convert URL-safe base64 characters to standard base64
+        let base64 = trimmed.replace(/-/g, '+').replace(/_/g, '/');
+        // Add missing padding if needed
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+
+        const binaryString = atob(base64);
+        // Check if string contains printable ASCII / UTF-8 chars (avoid decoding random binary blobs)
+        const bytes = new Uint8Array(binaryString.length);
+        let unprintableCount = 0;
+
+        for (let i = 0; i < binaryString.length; i++) {
+          const charCode = binaryString.charCodeAt(i);
+          bytes[i] = charCode;
+          // Count unprintable control characters (except common ones like newline, tab, carriage return)
+          if ((charCode < 32 && charCode !== 9 && charCode !== 10 && charCode !== 13) || charCode === 127) {
+            unprintableCount++;
+          }
+        }
+
+        // If more than 10% of characters are unprintable control codes, skip as binary/non-text
+        if (unprintableCount / binaryString.length > 0.1) {
+          return null;
+        }
+
+        // Decode UTF-8 string safely
+        const decodedStr = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        
+        // Ensure decoded output is non-empty and reasonably printable
+        return decodedStr.length > 0 ? decodedStr : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Parse pipe-delimited string (e.g. "key1:val1|key2:val2|emptyKey:") into object
+    function parsePipeDelimited(str) {
+      if (typeof str !== 'string') return null;
+      
+      // Needs to contain pipe '|' or colon structure
+      if (!str.includes('|') && !str.includes(':')) return null;
+
+      const pairs = str.split('|');
+      // Must have key-colon format in most segments
+      let validPairCount = 0;
+      const resultObj = {};
+
+      for (const pair of pairs) {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx !== -1) {
+          validPairCount++;
+          const key = pair.substring(0, colonIdx).trim();
+          const val = pair.substring(colonIdx + 1).trim();
+          if (key) {
+            resultObj[key] = val;
+          }
+        }
+      }
+
+      // Require at least 1 valid key:val format or pipe present
+      if (validPairCount > 0 && (str.includes('|') || pairs.length === 1)) {
+        return resultObj;
+      }
+
+      return null;
+    }
+
+    // --- SMART JSON SANITIZER ---
+    function sanitizeAndParseJSON(rawInput) {
+      let trimmed = rawInput.trim();
+      if (!trimmed) return { success: false, data: null, error: "Empty input" };
+
+      // Case 1: Trailing comma repair
+      let cleaned = trimmed.replace(/,\s*([}\]])/g, '$1');
+
+      // Case 2: Unwrapped snippet like "order_metadata": { ... }
+      if (!cleaned.startsWith('{') && !cleaned.startsWith('[')) {
+        // If user pasted `"key": { ... }` or `key: { ... }`
+        if (/^"?[a-zA-Z0-9_-]+"?\s*:\s*[{[]/.test(cleaned)) {
+          cleaned = `{ ${cleaned} }`;
+        }
+      }
+
+      try {
+        const parsed = JSON.parse(cleaned);
+        return { success: true, data: parsed, repaired: cleaned !== trimmed };
+      } catch (e1) {
+        // Advanced Repair Attempt: fix single quotes to double quotes on keys
+        try {
+          const relaxedJson = cleaned
+            .replace(/'/g, '"')
+            .replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
+          const parsed2 = JSON.parse(relaxedJson);
+          return { success: true, data: parsed2, repaired: true };
+        } catch (e2) {
+          return { success: false, data: null, error: e1.message };
+        }
+      }
+    }
+
+    // --- RECURSIVE PAYLOAD PROCESSOR ---
+    function processPayloadNode(key, value, path = []) {
+      const currentPath = [...path, key].filter(Boolean);
+      const node = {
+        key: key || 'root',
+        path: currentPath.join('.'),
+        rawValue: value,
+        isBase64: false,
+        decodedStr: null,
+        isPipeDelimited: false,
+        pipeParsedObj: null,
+        isNestedJson: false,
+        nestedJsonObj: null,
+        children: null,
+        type: typeof value
+      };
+
+      if (value === null || value === undefined) {
+        return node;
+      }
+
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        node.children = [];
+        for (const [k, v] of Object.entries(value)) {
+          node.children.push(processPayloadNode(k, v, currentPath));
+        }
+        return node;
+      }
+
+      if (Array.isArray(value)) {
+        node.children = value.map((item, idx) => processPayloadNode(`[${idx}]`, item, currentPath));
+        return node;
+      }
+
+      if (typeof value === 'string') {
+        const decoded = tryDecodeBase64(value);
+        if (decoded !== null) {
+          node.isBase64 = true;
+          node.decodedStr = decoded;
+
+          // Check if decoded string is itself JSON
+          try {
+            const nestedJson = JSON.parse(decoded);
+            if (typeof nestedJson === 'object' && nestedJson !== null) {
+              node.isNestedJson = true;
+              node.nestedJsonObj = nestedJson;
+            }
+          } catch (err) {
+            // Not JSON, check if pipe-delimited
+          }
+
+          if (!node.isNestedJson) {
+            const pipeParsed = parsePipeDelimited(decoded);
+            if (pipeParsed) {
+              node.isPipeDelimited = true;
+              node.pipeParsedObj = pipeParsed;
+            }
+          }
+        } else {
+          // Even if not Base64, check if it's already pipe-delimited string
+          const pipeParsed = parsePipeDelimited(value);
+          if (pipeParsed && Object.keys(pipeParsed).length > 1) {
+            node.isPipeDelimited = true;
+            node.pipeParsedObj = pipeParsed;
+          }
+        }
+      }
+
+      return node;
+    }
+
+    // Build structured output for formatted JSON export
+    function buildExportObjects(node) {
+      let totalKeys = 0;
+      let base64Count = 0;
+      let pipeFieldCount = 0;
+
+      function traverseParsed(n) {
+        totalKeys++;
+        if (n.isBase64) base64Count++;
+
+        if (n.children) {
+          const obj = Array.isArray(n.rawValue) ? [] : {};
+          for (const child of n.children) {
+            const childKey = child.key.replace(/^\[\d+\]$/, (m) => m.replace(/\[|\]/g, ''));
+            const res = traverseParsed(child);
+            if (Array.isArray(obj)) {
+              obj.push(res);
+            } else {
+              obj[childKey] = res;
+            }
+          }
+          return obj;
+        }
+
+        if (n.isBase64) {
+          if (n.isNestedJson) {
+            return n.nestedJsonObj;
+          }
+          if (n.isPipeDelimited) {
+            pipeFieldCount += Object.keys(n.pipeParsedObj).length;
+            return n.pipeParsedObj;
+          }
+          return n.decodedStr;
+        }
+
+        if (n.isPipeDelimited) {
+          pipeFieldCount += Object.keys(n.pipeParsedObj).length;
+          return n.pipeParsedObj;
+        }
+
+        return n.rawValue;
+      }
+
+      function traverseFlatRaw(n) {
+        if (n.children) {
+          const obj = Array.isArray(n.rawValue) ? [] : {};
+          for (const child of n.children) {
+            const childKey = child.key.replace(/^\[\d+\]$/, (m) => m.replace(/\[|\]/g, ''));
+            const res = traverseFlatRaw(child);
+            if (Array.isArray(obj)) {
+              obj.push(res);
+            } else {
+              obj[childKey] = res;
+            }
+          }
+          return obj;
+        }
+
+        if (n.isBase64) {
+          return n.decodedStr;
+        }
+
+        return n.rawValue;
+      }
+
+      const parsedObj = traverseParsed(node);
+      const flatDecodedObj = traverseFlatRaw(node);
+
+      return {
+        parsedObj,
+        flatDecodedObj,
+        metrics: { totalKeys, base64Count, pipeFieldCount }
+      };
+    }
+
+    // --- PROCESS INPUT MAIN ---
+    function processInput() {
+      const rawText = jsonInput.value;
+      if (!rawText.trim()) {
+        renderEmptyState();
+        updateMetrics(0, 0, 0);
+        inputStatusBadge.textContent = "Empty";
+        inputStatusBadge.className = "text-[11px] font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-500";
+        return;
+      }
+
+      const sanitizeResult = sanitizeAndParseJSON(rawText);
+
+      if (!sanitizeResult.success) {
+        inputStatusBadge.textContent = "JSON Syntax Error";
+        inputStatusBadge.className = "text-[11px] font-mono px-2 py-0.5 rounded border bg-rose-950/80 border-rose-800 text-rose-300";
+        renderErrorState(sanitizeResult.error);
+        updateMetrics(0, 0, 0);
+        return;
+      }
+
+      if (sanitizeResult.repaired) {
+        inputStatusBadge.textContent = "Valid JSON (Auto-Repaired)";
+        inputStatusBadge.className = "text-[11px] font-mono px-2 py-0.5 rounded border bg-amber-950/80 border-amber-800 text-amber-300";
+      } else {
+        inputStatusBadge.textContent = "Valid JSON";
+        inputStatusBadge.className = "text-[11px] font-mono px-2 py-0.5 rounded border bg-emerald-950/80 border-emerald-800 text-emerald-300";
+      }
+
+      const rootNode = processPayloadNode('', sanitizeResult.data);
+      parsedTree = buildExportObjects(rootNode);
+      parsedTree.rootNode = rootNode;
+
+      updateMetrics(
+        parsedTree.metrics.totalKeys - 1, // minus root
+        parsedTree.metrics.base64Count,
+        parsedTree.metrics.pipeFieldCount
+      );
+
+      renderCardsView(rootNode);
+      renderJsonView();
+      lucide.createIcons();
+    }
+
+    // --- METRICS DISPLAY ---
+    function updateMetrics(keys, base64, pipe) {
+      metricKeys.textContent = keys;
+      metricBase64.textContent = base64;
+      metricPipeFields.textContent = pipe;
+    }
+
+    // --- CARDS VIEW RENDERER ---
+    function renderCardsView(rootNode) {
+      cardsContainer.innerHTML = '';
+
+      // Collect nodes to render as top-level cards
+      let cardNodes = [];
+      if (rootNode.children && rootNode.children.length > 0) {
+        // If root has children (e.g. order_metadata or object keys)
+        if (rootNode.children.length === 1 && rootNode.children[0].children) {
+          // Display children of single top wrapper (like order_metadata)
+          const wrapper = rootNode.children[0];
+          const headerBanner = document.createElement('div');
+          headerBanner.className = "p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-cyan-400 flex items-center justify-between";
+          headerBanner.innerHTML = `
+            <div class="flex items-center gap-2">
+              <i data-lucide="folder-tree" class="w-4 h-4 text-cyan-400"></i>
+              <span>Root Payload Wrapper: <strong class="text-white">${escapeHtml(wrapper.key)}</strong></span>
+            </div>
+            <span class="text-slate-500 text-[11px]">${wrapper.children.length} fields</span>
+          `;
+          cardsContainer.appendChild(headerBanner);
+          cardNodes = wrapper.children;
+        } else {
+          cardNodes = rootNode.children;
+        }
+      } else {
+        cardNodes = [rootNode];
+      }
+
+      if (cardNodes.length === 0) {
+        renderEmptyState();
+        return;
+      }
+
+      cardNodes.forEach(node => {
+        cardsContainer.appendChild(createCardElement(node));
+      });
+    }
+
+    // Create Card Component for single key/node
+    function createCardElement(node) {
+      const card = document.createElement('div');
+      card.className = "card-item bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-xl overflow-hidden transition shadow-sm";
+      card.setAttribute('data-key', node.key.toLowerCase());
+      card.setAttribute('data-searchable', (node.key + ' ' + (node.decodedStr || '') + ' ' + JSON.stringify(node.pipeParsedObj || '')).toLowerCase());
+
+      // Badge tag
+      let badgeHtml = '';
+      if (node.isBase64) {
+        badgeHtml += `<span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-emerald-950 text-emerald-400 border border-emerald-800/80 flex items-center gap-1"><i data-lucide="unlock" class="w-3 h-3"></i> Base64</span>`;
+      }
+      if (node.isPipeDelimited) {
+        badgeHtml += `<span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-950 text-indigo-300 border border-indigo-800/80 flex items-center gap-1"><i data-lucide="list-tree" class="w-3 h-3"></i> Pipe Parsed</span>`;
+      }
+      if (node.isNestedJson) {
+        badgeHtml += `<span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-amber-950 text-amber-300 border border-amber-800/80 flex items-center gap-1"><i data-lucide="file-json" class="w-3 h-3"></i> Nested JSON</span>`;
+      }
+      if (!node.isBase64 && !node.isPipeDelimited && !node.isNestedJson && !node.children) {
+        badgeHtml += `<span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-slate-800 text-slate-400 border border-slate-700">${node.type}</span>`;
+      }
+
+      // Card Header
+      const header = document.createElement('div');
+      header.className = "p-3.5 bg-slate-900/90 flex items-center justify-between cursor-pointer select-none border-b border-slate-800/80 hover:bg-slate-800/40 transition";
+      header.innerHTML = `
+        <div class="flex items-center gap-3 min-w-0">
+          <i data-lucide="chevron-right" class="card-chevron w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+          <span class="font-mono text-xs font-bold text-slate-100 truncate">${escapeHtml(node.key)}</span>
+          <div class="flex items-center gap-1.5 flex-wrap">${badgeHtml}</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="btn-copy-card p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition" title="Copy Raw Decoded Value">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `;
+
+      // Card Body
+      const body = document.createElement('div');
+      body.className = "card-body p-4 flex flex-col gap-3 bg-slate-950/40 border-t border-slate-800/50 hidden";
+
+      // Contents inside body
+      if (node.isBase64) {
+        // Raw Base64 string box
+        const rawBox = document.createElement('div');
+        rawBox.className = "text-xs font-mono bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 text-slate-400 flex items-center justify-between gap-2";
+        rawBox.innerHTML = `
+          <div class="truncate text-[11px]">
+            <span class="text-slate-500 mr-2 select-none">Raw Base64:</span>
+            <span class="text-slate-300">${escapeHtml(node.rawValue)}</span>
+          </div>
+          <button class="btn-copy-raw hover:text-cyan-400 text-slate-500 shrink-0" title="Copy Raw Base64">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        body.appendChild(rawBox);
+      }
+
+      // Decoded String display
+      if (node.decodedStr) {
+        const decodedBox = document.createElement('div');
+        decodedBox.className = "flex flex-col gap-1.5";
+        decodedBox.innerHTML = `
+          <div class="flex items-center justify-between text-xs font-medium text-slate-400">
+            <span class="flex items-center gap-1"><i data-lucide="align-left" class="w-3.5 h-3.5 text-emerald-400"></i> Decoded String:</span>
+          </div>
+          <div class="p-3 bg-slate-900 rounded-lg border border-slate-800 font-mono text-xs text-emerald-300 break-all leading-relaxed select-text">
+            ${escapeHtml(node.decodedStr)}
+          </div>
+        `;
+        body.appendChild(decodedBox);
+      }
+
+      // Pipe-Delimited Table View
+      if (node.isPipeDelimited && node.pipeParsedObj) {
+        const tableBox = document.createElement('div');
+        tableBox.className = "flex flex-col gap-2 mt-1";
+        
+        let tableRows = '';
+        for (const [pk, pv] of Object.entries(node.pipeParsedObj)) {
+          const isEmpty = pv === '';
+          const valueDisplay = isEmpty 
+            ? `<span class="italic text-slate-500 font-mono text-[11px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800/80">(empty)</span>` 
+            : `<span class="font-mono text-xs text-cyan-300 font-medium break-all select-text">${escapeHtml(pv)}</span>`;
+
+          tableRows += `
+            <tr class="border-b border-slate-800/60 hover:bg-slate-900/60 transition group">
+              <td class="py-2 px-3 font-mono text-xs font-semibold text-slate-300 w-1/3 align-top flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                <span>${escapeHtml(pk)}</span>
+              </td>
+              <td class="py-2 px-3 align-top">
+                ${valueDisplay}
+              </td>
+              <td class="py-2 px-3 text-right w-10 align-top">
+                <button class="btn-copy-val opacity-0 group-hover:opacity-100 transition p-1 text-slate-500 hover:text-slate-200" data-val="${escapeHtml(pv)}" title="Copy Value">
+                  <i data-lucide="copy" class="w-3 h-3"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+
+        tableBox.innerHTML = `
+          <div class="flex items-center justify-between text-xs font-medium text-slate-400 mb-1">
+            <span class="flex items-center gap-1.5 text-indigo-300 font-semibold">
+              <i data-lucide="table-properties" class="w-4 h-4 text-indigo-400"></i> Parsed Key-Value Pairs (${Object.keys(node.pipeParsedObj).length})
+            </span>
+            <button class="btn-copy-json-pipe text-[11px] text-slate-400 hover:text-cyan-400 transition flex items-center gap-1">
+              <i data-lucide="copy" class="w-3 h-3"></i> Copy Pairs JSON
+            </button>
+          </div>
+          <div class="overflow-hidden border border-slate-800 rounded-lg bg-slate-900/70">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-900 text-[11px] font-mono text-slate-400 border-b border-slate-800">
+                  <th class="py-1.5 px-3 font-medium">Attribute Key</th>
+                  <th class="py-1.5 px-3 font-medium">Parsed Value</th>
+                  <th class="py-1.5 px-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+        body.appendChild(tableBox);
+      }
+
+      // Nested JSON View
+      if (node.isNestedJson && node.nestedJsonObj) {
+        const nestedBox = document.createElement('div');
+        nestedBox.className = "flex flex-col gap-2 mt-1";
+        nestedBox.innerHTML = `
+          <div class="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+            <i data-lucide="file-json" class="w-4 h-4 text-amber-400"></i> Decoded Nested JSON Structure
+          </div>
+          <pre class="p-3 bg-slate-900 border border-slate-800 rounded-lg font-mono text-xs text-amber-200/90 overflow-x-auto leading-relaxed select-text">${escapeHtml(JSON.stringify(node.nestedJsonObj, null, 2))}</pre>
+        `;
+        body.appendChild(nestedBox);
+      }
+
+      // Children nested nodes (recursive display if object)
+      if (node.children && node.children.length > 0 && !node.isBase64) {
+        const childrenBox = document.createElement('div');
+        childrenBox.className = "flex flex-col gap-3 mt-1 pl-2 border-l-2 border-slate-800";
+        node.children.forEach(child => {
+          childrenBox.appendChild(createCardElement(child));
+        });
+        body.appendChild(childrenBox);
+      }
+
+      // Plain unencoded value
+      if (!node.isBase64 && !node.children && !node.isPipeDelimited) {
+        const plainBox = document.createElement('div');
+        plainBox.className = "p-3 bg-slate-900 rounded-lg border border-slate-800 font-mono text-xs text-slate-300 select-text";
+        plainBox.textContent = String(node.rawValue);
+        body.appendChild(plainBox);
+      }
+
+      card.appendChild(header);
+      card.appendChild(body);
+
+      // Card Header Toggle Interaction
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return; // Ignore click on header copy button
+        toggleCard(card);
+      });
+
+      // Card Header Copy Button
+      const btnCopyCard = header.querySelector('.btn-copy-card');
+      if (btnCopyCard) {
+        btnCopyCard.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetText = node.decodedStr || (node.pipeParsedObj ? JSON.stringify(node.pipeParsedObj, null, 2) : String(node.rawValue));
+          copyToClipboard(targetText, `Copied value for ${node.key}`);
+        });
+      }
+
+      // Raw Copy Button
+      const btnCopyRaw = body.querySelector('.btn-copy-raw');
+      if (btnCopyRaw) {
+        btnCopyRaw.addEventListener('click', () => {
+          copyToClipboard(node.rawValue, `Copied raw Base64 for ${node.key}`);
+        });
+      }
+
+      // Copy Pipe JSON
+      const btnCopyJsonPipe = body.querySelector('.btn-copy-json-pipe');
+      if (btnCopyJsonPipe) {
+        btnCopyJsonPipe.addEventListener('click', () => {
+          copyToClipboard(JSON.stringify(node.pipeParsedObj, null, 2), `Copied parsed pairs for ${node.key}`);
+        });
+      }
+
+      // Copy Individual Table Values
+      body.querySelectorAll('.btn-copy-val').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const val = btn.getAttribute('data-val');
+          copyToClipboard(val, "Copied attribute value!");
+        });
+      });
+
+      // Expand card by default if it contains decoded Base64 or pipe attributes
+      if (node.isBase64 || node.isPipeDelimited) {
+        toggleCard(card, true);
+      }
+
+      return card;
+    }
+
+    // Toggle card expansion state
+    function toggleCard(cardElement, forceState) {
+      const body = cardElement.querySelector('.card-body');
+      const chevron = cardElement.querySelector('.card-chevron');
+      if (!body) return;
+
+      const shouldExpand = forceState !== undefined ? forceState : body.classList.contains('hidden');
+
+      if (shouldExpand) {
+        body.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(90deg)';
+      } else {
+        body.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function toggleAllCards(expand) {
+      document.querySelectorAll('.card-item').forEach(card => toggleCard(card, expand));
+    }
+
+    // --- FILTER CARDS ---
+    function filterCards() {
+      const query = cardFilterInput.value.toLowerCase().trim();
+      const cards = cardsContainer.querySelectorAll('.card-item');
+
+      cards.forEach(card => {
+        const searchable = card.getAttribute('data-searchable') || '';
+        if (!query || searchable.includes(query)) {
+          card.classList.remove('hidden');
+          if (query) toggleCard(card, true);
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    // --- FORMATTED JSON VIEW RENDERER ---
+    function renderJsonView() {
+      if (!parsedTree) {
+        jsonCodeOutput.innerHTML = '<span class="text-slate-500">// No JSON parsed</span>';
+        return;
+      }
+
+      const targetObj = jsonOutputMode === 'parsed' ? parsedTree.parsedObj : parsedTree.flatDecodedObj;
+      const jsonStr = JSON.stringify(targetObj, null, 2);
+      jsonCodeOutput.innerHTML = highlightJson(jsonStr);
+    }
+
+    // Syntax Highlighting Helper
+    function highlightJson(json) {
+      if (!json) return '';
+      json = escapeHtml(json);
+      return json.replace(/("(\\u[a-zA-A0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'syntax-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'syntax-key';
+          } else {
+            cls = 'syntax-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'syntax-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'syntax-null';
+        }
+        return `<span class="${cls}">${match}</span>`;
+      });
+    }
+
+    // --- EMPTY & ERROR STATES ---
+    function renderEmptyState() {
+      cardsContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl p-6 bg-slate-900/20">
+          <div class="h-12 w-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-3">
+            <i data-lucide="terminal" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-sm font-semibold text-slate-300">No Metadata Payload Parsed</h3>
+          <p class="text-xs text-slate-500 max-w-sm mt-1">Paste a JSON payload in the input panel to decode and inspect its contents.</p>
+        </div>
+      `;
+      jsonCodeOutput.innerHTML = '<span class="text-slate-500">// Waiting for input...</span>';
+      lucide.createIcons();
+    }
+
+    function renderErrorState(errorMsg) {
+      cardsContainer.innerHTML = `
+        <div class="p-4 bg-rose-950/40 border border-rose-900/80 rounded-xl flex items-start gap-3">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+          <div>
+            <h4 class="text-xs font-bold text-rose-300">Invalid JSON Format</h4>
+            <p class="text-xs font-mono text-rose-200/80 mt-1 leading-relaxed">${escapeHtml(errorMsg)}</p>
+            <p class="text-[11px] text-slate-400 mt-2">Check for missing brackets, unescaped quotes, or syntax issues.</p>
+          </div>
+        </div>
+      `;
+      jsonCodeOutput.innerHTML = `<span class="text-rose-400">// Error: ${escapeHtml(errorMsg)}</span>`;
+      lucide.createIcons();
+    }
+
+    // --- TOAST NOTIFICATIONS & COPY ---
+    function copyToClipboard(text, message = "Copied to clipboard!") {
+      if (!text) return;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast(message));
+      } else {
+        // Fallback for iframe restrictions
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast(message);
+        } catch (err) {
+          showToast("Failed to copy text");
+        }
+        document.body.removeChild(textArea);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.remove('translate-y-10', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-10', 'opacity-0');
+      }, 2500);
+    }
+
+    // HTML escape utility
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return String(str);
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

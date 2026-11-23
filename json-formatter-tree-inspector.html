@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jsonix — JSON Formatter, Validator &amp; Tree Inspector</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['Fira Code', 'JetBrains Mono', 'Menlo', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              950: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Syntax Highlighting Colors */
+    .json-key { color: #38bdf8; font-weight: 500; }
+    .json-string { color: #4ade80; }
+    .json-number { color: #facc15; }
+    .json-boolean { color: #f472b6; font-weight: 600; }
+    .json-null { color: #94a3b8; font-style: italic; }
+    .json-bracket { color: #94a3b8; }
+
+    /* Foldable Code Lines */
+    .collapsible-trigger {
+      cursor: pointer;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    .collapsible-trigger:hover {
+      background-color: rgba(51, 65, 85, 0.4);
+      border-radius: 4px;
+    }
+
+    /* Line Numbering Sync */
+    .editor-line-numbers {
+      counter-reset: line;
+    }
+    .editor-line-numbers div::before {
+      counter-increment: line;
+      content: counter(line);
+      display: inline-block;
+      width: 100%;
+      text-align: right;
+      color: #475569;
+      padding-right: 0.75rem;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-sky-500 selection:text-slate-950">
+
+  <!-- TOP HEADER NAV -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 shrink-0">
+    <div class="max-w-[1800px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <i data-lucide="file-json" class="w-5 h-5 text-slate-950"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+            Jsonix <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-800 font-mono font-medium">JSON Formatter &amp; Tree Inspector</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Action Toolbar Center/Right -->
+      <div class="flex items-center gap-2 flex-wrap">
+        
+        <!-- Sort Keys Toggle -->
+        <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-xs text-slate-300 hover:text-white cursor-pointer transition select-none">
+          <input type="checkbox" id="chkSortKeys" class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-sky-500">
+          <i data-lucide="arrow-down-a-z" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span class="hidden sm:inline">Sort Keys A–Z</span>
+        </label>
+
+        <!-- Indent Size Selector -->
+        <div class="flex items-center gap-1 px-2.5 py-1 bg-slate-800/80 border border-slate-700 rounded-lg text-xs text-slate-300">
+          <span class="text-slate-500 hidden md:inline">Indent:</span>
+          <select id="selIndent" class="bg-transparent text-slate-200 font-mono text-xs focus:outline-none cursor-pointer">
+            <option value="2" class="bg-slate-900">2 Spaces</option>
+            <option value="4" class="bg-slate-900">4 Spaces</option>
+            <option value="tab" class="bg-slate-900">Tab</option>
+          </select>
+        </div>
+
+        <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+        <!-- Download JSON -->
+        <button id="btnDownload" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span class="hidden sm:inline">Export .json</span>
+        </button>
+
+        <!-- Copy Output -->
+        <button id="btnCopyOutput" class="px-3.5 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-slate-950 rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-sky-600/30">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copy Output</span>
+        </button>
+      </div>
+
+    </div>
+    <nav aria-label="Main navigation" class="border-t border-slate-800/80">
+      <div class="max-w-[1800px] mx-auto px-4 sm:px-6 h-10 flex items-center gap-2 overflow-x-auto text-xs font-medium">
+        <a href="index.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">Home</a>
+        <a href="api-json-studio.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">API &amp; JSON Studio</a>
+        <a href="json-formatter-tree-inspector.html" aria-current="page" class="shrink-0 rounded-md px-3 py-1.5 text-sky-300 bg-sky-500/10 transition">JSON Formatter</a>
+        <a href="base64-json-metadata-decoder.html" class="shrink-0 rounded-md px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition">Base64 Metadata Decoder</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- MAIN SPLIT WORKSPACE -->
+  <main class="flex-1 max-w-[1800px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col gap-4 overflow-hidden">
+    
+    <!-- Status / Metrics Diagnostic Banner -->
+    <div id="statusBanner" class="transition-all duration-200 rounded-xl p-3 border flex flex-wrap items-center justify-between gap-3 bg-slate-900 border-slate-800 text-xs">
+      <div class="flex items-center gap-2.5">
+        <span id="statusIcon" class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="statusTitle" class="font-bold text-slate-200">Valid JSON Payload</span>
+        <span id="statusMessage" class="text-slate-400 hidden md:inline">Ready to format and inspect.</span>
+      </div>
+      
+      <!-- Metrics Pills -->
+      <div id="metricsPills" class="flex items-center gap-3 font-mono text-[11px]">
+        <div class="flex items-center gap-1 text-slate-400" title="Total Object/Array Keys">
+          <i data-lucide="key" class="w-3 h-3 text-sky-400"></i>
+          <span>Keys:</span> <strong id="statKeys" class="text-sky-400">0</strong>
+        </div>
+        <div class="flex items-center gap-1 text-slate-400" title="Maximum JSON Nesting Depth">
+          <i data-lucide="layers" class="w-3 h-3 text-amber-400"></i>
+          <span>Depth:</span> <strong id="statDepth" class="text-amber-400">0</strong>
+        </div>
+        <div class="flex items-center gap-1 text-slate-400" title="Payload Byte Size">
+          <i data-lucide="hard-drive" class="w-3 h-3 text-emerald-400"></i>
+          <span>Size:</span> <strong id="statSize" class="text-emerald-400">0 B</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2-COLUMN GRID WORKSPACE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+      
+      <!-- LEFT COLUMN: INPUT EDITOR -->
+      <div class="lg:col-span-5 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Input Header Controls -->
+        <div class="px-3.5 py-2.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4 text-sky-400"></i>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Raw Input</span>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-1.5">
+            <button id="btnPaste" class="px-2 py-1 text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition flex items-center gap-1" title="Paste Clipboard">
+              <i data-lucide="clipboard-paste" class="w-3 h-3"></i> Paste
+            </button>
+            <button id="btnAutoFix" class="px-2 py-1 text-[11px] font-medium bg-indigo-950 hover:bg-indigo-900 text-indigo-300 rounded border border-indigo-800 transition flex items-center gap-1" title="Auto-fix single quotes, unquoted keys & trailing commas">
+              <i data-lucide="sparkles" class="w-3 h-3 text-indigo-400"></i> Auto-Fix
+            </button>
+            <button id="btnClear" class="px-2 py-1 text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded border border-slate-700 transition flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Textarea Editor with Line Numbers -->
+        <div class="relative flex-1 min-h-[300px] flex overflow-hidden bg-slate-950/50">
+          
+          <!-- Line Numbers Gutter -->
+          <div id="gutter" class="editor-line-numbers w-10 py-3 bg-slate-950 text-slate-600 font-mono text-xs select-none border-r border-slate-800/80 overflow-hidden shrink-0">
+            <!-- Line numbers injected via JS -->
+          </div>
+
+          <!-- Input Textarea -->
+          <textarea 
+            id="jsonInput"
+            placeholder="Paste your JSON payload here... Loose JSON with trailing commas, single quotes, or unquoted keys can be auto-repaired using the 'Auto-Fix' button above."
+            spellcheck="false"
+            class="w-full h-full p-3 font-mono text-xs bg-transparent text-slate-200 border-none focus:outline-none resize-none leading-relaxed overflow-auto leading-5"
+          ></textarea>
+        </div>
+
+        <!-- Input Footer Counter -->
+        <div class="px-3.5 py-1.5 bg-slate-950 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-500 shrink-0">
+          <div class="flex items-center gap-3">
+            <span>Chars: <strong id="countChars" class="text-slate-400">0</strong></span>
+            <span>Lines: <strong id="countLines" class="text-slate-400">1</strong></span>
+          </div>
+          <span>UTF-8</span>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: OUTPUT INSPECTOR -->
+      <div class="lg:col-span-7 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Bar Header -->
+        <div class="px-3.5 py-2 bg-slate-950/60 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
+          
+          <!-- Tab Switches -->
+          <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="tabPretty" class="px-3 py-1 text-xs font-medium rounded-md bg-slate-800 text-sky-400 shadow transition flex items-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Pretty Print
+            </button>
+            <button id="tabTree" class="px-3 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+              <i data-lucide="network" class="w-3.5 h-3.5"></i> Interactive Tree
+            </button>
+            <button id="tabMinified" class="px-3 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+              <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i> Minified
+            </button>
+          </div>
+
+          <!-- Tab Auxiliary Tools -->
+          <div class="flex items-center gap-2">
+            <!-- Search for Tree View -->
+            <div id="treeSearchWrapper" class="hidden relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="treeSearchInput" placeholder="Filter keys/values..." class="pl-8 pr-3 py-1 text-xs bg-slate-950 border border-slate-800 text-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 w-36 sm:w-44">
+            </div>
+
+            <!-- Tree Expand / Collapse controls -->
+            <div id="treeControls" class="hidden flex items-center gap-1">
+              <button id="btnExpandTree" title="Expand All Nodes" class="p-1 text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 rounded-md transition">
+                <i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i>
+              </button>
+              <button id="btnCollapseTree" title="Collapse All Nodes" class="p-1 text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 rounded-md transition">
+                <i data-lucide="chevrons-up" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Minified Bytes Saved indicator -->
+            <span id="minifiedSavingsBadge" class="hidden font-mono text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold">
+              0% Saved
+            </span>
+          </div>
+
+        </div>
+
+        <!-- TAB CONTENT VIEW AREA -->
+        <div class="flex-1 min-h-[300px] relative overflow-hidden bg-slate-950/40">
+          
+          <!-- VIEW 1: PRETTY PRINT -->
+          <div id="viewPretty" class="w-full h-full flex overflow-auto p-3 font-mono text-xs leading-5">
+            <div id="prettyCodeContainer" class="w-full select-text">
+              <!-- Rendered colored HTML injected here -->
+            </div>
+          </div>
+
+          <!-- VIEW 2: INTERACTIVE TREE -->
+          <div id="viewTree" class="hidden w-full h-full overflow-auto p-4 font-mono text-xs">
+            <div id="treeContainer" class="flex flex-col gap-1">
+              <!-- Rendered Tree Nodes injected here -->
+            </div>
+          </div>
+
+          <!-- VIEW 3: MINIFIED -->
+          <div id="viewMinified" class="hidden w-full h-full p-4 overflow-auto">
+            <textarea 
+              id="minifiedOutput" 
+              readonly 
+              spellcheck="false"
+              class="w-full h-full font-mono text-xs bg-slate-950 text-slate-300 border border-slate-800/80 rounded-lg p-3 focus:outline-none resize-none leading-relaxed select-all"
+            ></textarea>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-sky-500/40 shadow-2xl shadow-sky-950/80 text-xs font-medium">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Action completed</span>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // --- STATE ---
+    let parsedJson = null;
+    let rawInputText = '';
+    let currentTab = 'pretty'; // 'pretty' | 'tree' | 'minified'
+    let activeIndent = 2; // 2, 4, or 'tab'
+    let treeSearchQuery = '';
+
+    // --- DOM REFERENCES ---
+    const jsonInput = document.getElementById('jsonInput');
+    const gutter = document.getElementById('gutter');
+    const statusBanner = document.getElementById('statusBanner');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusMessage = document.getElementById('statusMessage');
+    const statKeys = document.getElementById('statKeys');
+    const statDepth = document.getElementById('statDepth');
+    const statSize = document.getElementById('statSize');
+    const countChars = document.getElementById('countChars');
+    const countLines = document.getElementById('countLines');
+
+    // Controls
+    const chkSortKeys = document.getElementById('chkSortKeys');
+    const selIndent = document.getElementById('selIndent');
+    const treeSearchInput = document.getElementById('treeSearchInput');
+    const treeSearchWrapper = document.getElementById('treeSearchWrapper');
+    const treeControls = document.getElementById('treeControls');
+    const minifiedSavingsBadge = document.getElementById('minifiedSavingsBadge');
+
+    // Views & Tabs
+    const tabPretty = document.getElementById('tabPretty');
+    const tabTree = document.getElementById('tabTree');
+    const tabMinified = document.getElementById('tabMinified');
+    const viewPretty = document.getElementById('viewPretty');
+    const viewTree = document.getElementById('viewTree');
+    const viewMinified = document.getElementById('viewMinified');
+    const prettyCodeContainer = document.getElementById('prettyCodeContainer');
+    const treeContainer = document.getElementById('treeContainer');
+    const minifiedOutput = document.getElementById('minifiedOutput');
+
+    // Toast
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+
+      updateLineNumbers();
+      processInput();
+
+      // Event Listeners
+      jsonInput.addEventListener('input', () => {
+        updateLineNumbers();
+        processInput();
+      });
+
+      jsonInput.addEventListener('scroll', () => {
+        gutter.scrollTop = jsonInput.scrollTop;
+      });
+
+      chkSortKeys.addEventListener('change', processInput);
+
+      selIndent.addEventListener('change', (e) => {
+        const val = e.target.value;
+        activeIndent = val === 'tab' ? '\t' : parseInt(val, 10);
+        processInput();
+      });
+
+      // Tab switching
+      tabPretty.addEventListener('click', () => switchTab('pretty'));
+      tabTree.addEventListener('click', () => switchTab('tree'));
+      tabMinified.addEventListener('click', () => switchTab('minified'));
+
+      // Buttons
+      document.getElementById('btnClear').addEventListener('click', () => {
+        jsonInput.value = '';
+        updateLineNumbers();
+        processInput();
+        showToast('Cleared input');
+      });
+
+      document.getElementById('btnPaste').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            jsonInput.value = text;
+            updateLineNumbers();
+            processInput();
+            showToast('Pasted from clipboard');
+          }
+        } catch (err) {
+          showToast('Clipboard access denied');
+        }
+      });
+
+      document.getElementById('btnAutoFix').addEventListener('click', () => {
+        runAutoFix();
+      });
+
+      document.getElementById('btnCopyOutput').addEventListener('click', () => {
+        copyCurrentOutput();
+      });
+
+      document.getElementById('btnDownload').addEventListener('click', exportJsonFile);
+
+      // Tree View Actions
+      treeSearchInput.addEventListener('input', (e) => {
+        treeSearchQuery = e.target.value.toLowerCase().trim();
+        renderTreeView();
+      });
+
+      document.getElementById('btnExpandTree').addEventListener('click', () => toggleAllTreeNodes(true));
+      document.getElementById('btnCollapseTree').addEventListener('click', () => toggleAllTreeNodes(false));
+    });
+
+    // --- LINE NUMBER SYNCHRONIZER ---
+    function updateLineNumbers() {
+      const lines = jsonInput.value.split('\n').length;
+      let gutterHtml = '';
+      for (let i = 1; i <= lines; i++) {
+        gutterHtml += `<div></div>`;
+      }
+      gutter.innerHTML = gutterHtml;
+      countLines.textContent = lines;
+      countChars.textContent = jsonInput.value.length;
+    }
+
+    // --- TAB SWITCHER ---
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      const activeClass = "px-3 py-1 text-xs font-medium rounded-md bg-slate-800 text-sky-400 shadow transition flex items-center gap-1.5";
+      const inactiveClass = "px-3 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+
+      tabPretty.className = tab === 'pretty' ? activeClass : inactiveClass;
+      tabTree.className = tab === 'tree' ? activeClass : inactiveClass;
+      tabMinified.className = tab === 'minified' ? activeClass : inactiveClass;
+
+      viewPretty.classList.toggle('hidden', tab !== 'pretty');
+      viewTree.classList.toggle('hidden', tab !== 'tree');
+      viewMinified.classList.toggle('hidden', tab !== 'minified');
+
+      treeSearchWrapper.classList.toggle('hidden', tab !== 'tree');
+      treeControls.classList.toggle('hidden', tab !== 'tree');
+      minifiedSavingsBadge.classList.toggle('hidden', tab !== 'minified');
+    }
+
+    // --- SORT KEYS HELPER ---
+    function sortObjectKeys(obj) {
+      if (obj === null || typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+      
+      return Object.keys(obj)
+        .sort()
+        .reduce((sorted, key) => {
+          sorted[key] = sortObjectKeys(obj[key]);
+          return sorted;
+        }, {});
+    }
+
+    // --- CORE PROCESS INPUT ---
+    function processInput() {
+      rawInputText = jsonInput.value;
+      
+      if (!rawInputText.trim()) {
+        renderEmptyState();
+        return;
+      }
+
+      try {
+        let parsed = JSON.parse(rawInputText);
+
+        if (chkSortKeys.checked) {
+          parsed = sortObjectKeys(parsed);
+        }
+
+        parsedJson = parsed;
+
+        // Calculate Metrics
+        const metrics = analyzeJson(parsedJson, rawInputText);
+
+        // Update Banner Status (Valid)
+        statusBanner.className = "transition-all duration-200 rounded-xl p-3 border flex flex-wrap items-center justify-between gap-3 bg-emerald-950/30 border-emerald-800/60 text-xs";
+        statusIcon.className = "h-2.5 w-2.5 rounded-full bg-emerald-400 shadow shadow-emerald-400/50";
+        statusTitle.className = "font-bold text-emerald-300";
+        statusTitle.textContent = "Valid JSON Payload";
+        statusMessage.textContent = "JSON syntax verified successfully.";
+        
+        statKeys.textContent = metrics.keyCount;
+        statDepth.textContent = metrics.maxDepth;
+        statSize.textContent = formatBytes(metrics.byteSize);
+
+        // Render Active Views
+        renderPrettyView();
+        renderTreeView();
+        renderMinifiedView(metrics.byteSize);
+
+      } catch (err) {
+        parsedJson = null;
+        renderErrorState(err.message);
+      }
+    }
+
+    // --- JSON ANALYZER & METRICS ---
+    function analyzeJson(obj, rawText) {
+      let keyCount = 0;
+      let maxDepth = 0;
+
+      function traverse(item, depth) {
+        if (depth > maxDepth) maxDepth = depth;
+
+        if (item !== null && typeof item === 'object') {
+          if (Array.isArray(item)) {
+            item.forEach(el => traverse(el, depth + 1));
+          } else {
+            const keys = Object.keys(item);
+            keyCount += keys.length;
+            keys.forEach(k => traverse(item[k], depth + 1));
+          }
+        }
+      }
+
+      traverse(obj, 1);
+      const byteSize = new Blob([rawText]).size;
+
+      return { keyCount, maxDepth, byteSize };
+    }
+
+    // --- AUTO-FIX LOOSE JSON ENGINE ---
+    function runAutoFix() {
+      let str = jsonInput.value.trim();
+      if (!str) return;
+
+      // 1. Remove single line & multiline JS comments
+      str = str.replace(/\/\/*.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+      // 2. Replace single quotes with double quotes around keys and string values
+      str = str.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
+
+      // 3. Quote unquoted object keys: { key: "val" } -> { "key": "val" }
+      str = str.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
+
+      // 4. Remove trailing commas before } or ]
+      str = str.replace(/,\s*([}\]])/g, '$1');
+
+      // 5. Wrap raw key-value pair if missing braces
+      if (!str.startsWith('{') && !str.startsWith('[') && str.includes(':')) {
+        str = `{ ${str} }`;
+      }
+
+      jsonInput.value = str;
+      updateLineNumbers();
+      processInput();
+
+      if (parsedJson !== null) {
+        showToast('Successfully repaired & formatted JSON!');
+      } else {
+        showToast('Attempted fix. Please check remaining syntax issues.');
+      }
+    }
+
+    // --- PRETTY PRINT RENDERER ---
+    function renderPrettyView() {
+      if (!parsedJson) return;
+
+      const indentStr = typeof activeIndent === 'number' ? ' '.repeat(activeIndent) : '\t';
+      const formattedJson = JSON.stringify(parsedJson, null, indentStr);
+
+      // Syntax highlight with line numbers
+      const lines = formattedJson.split('\n');
+      let html = '<table class="w-full border-collapse font-mono text-xs text-slate-200">';
+      
+      lines.forEach((line, idx) => {
+        const lineNum = idx + 1;
+        const highlighted = highlightSyntaxLine(line);
+        html += `
+          <tr class="hover:bg-slate-900/60 transition">
+            <td class="w-8 py-0.5 pr-3 text-right text-slate-600 select-none border-r border-slate-800/50">${lineNum}</td>
+            <td class="py-0.5 pl-3 whitespace-pre">${highlighted}</td>
+          </tr>
+        `;
+      });
+      html += '</table>';
+
+      prettyCodeContainer.innerHTML = html;
+    }
+
+    function highlightSyntaxLine(line) {
+      // Basic syntax highlighter for pretty JSON output
+      return line.replace(/("(\\u[a-zA-A0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return `<span class="${cls}">${escapeHtml(match)}</span>`;
+      });
+    }
+
+    // --- INTERACTIVE TREE VIEW RENDERER ---
+    function renderTreeView() {
+      if (!parsedJson) return;
+      treeContainer.innerHTML = '';
+
+      const rootNode = buildTreeNode('$', parsedJson, '$');
+      treeContainer.appendChild(rootNode);
+      lucide.createIcons();
+    }
+
+    function buildTreeNode(key, value, jsonPath) {
+      const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+      const isObject = type === 'object';
+      const isArray = type === 'array';
+      const isComplex = isObject || isArray;
+
+      const node = document.createElement('div');
+      node.className = "tree-node flex flex-col gap-1 my-0.5";
+
+      // Type Badge Colors
+      const badgeColors = {
+        string: 'bg-emerald-950 text-emerald-400 border-emerald-800',
+        number: 'bg-amber-950 text-amber-400 border-amber-800',
+        boolean: 'bg-pink-950 text-pink-400 border-pink-800',
+        null: 'bg-slate-800 text-slate-400 border-slate-700',
+        array: 'bg-indigo-950 text-indigo-300 border-indigo-800',
+        object: 'bg-sky-950 text-sky-400 border-sky-800'
+      };
+
+      // Search match check
+      const keyMatch = treeSearchQuery && key.toLowerCase().includes(treeSearchQuery);
+      const valMatch = treeSearchQuery && !isComplex && String(value).toLowerCase().includes(treeSearchQuery);
+      const isMatched = keyMatch || valMatch;
+
+      // Header row
+      const header = document.createElement('div');
+      header.className = `flex items-center gap-2 p-1 rounded-md hover:bg-slate-900 transition group select-none ${isMatched ? 'bg-sky-950/60 ring-1 ring-sky-500/50' : ''}`;
+      
+      let childCountText = '';
+      if (isArray) childCountText = `[${value.length}]`;
+      if (isObject) childCountText = `{${Object.keys(value).length}}`;
+
+      header.innerHTML = `
+        <div class="flex items-center gap-1.5 cursor-pointer tree-toggle">
+          ${isComplex ? `<i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400 transition-transform tree-chevron"></i>` : `<span class="w-3.5"></span>`}
+          <span class="font-bold text-sky-300">${escapeHtml(key)}:</span>
+        </div>
+
+        <span class="px-1.5 py-0.2 text-[10px] font-mono rounded border ${badgeColors[type]} font-semibold">${type}</span>
+        ${childCountText ? `<span class="text-[11px] text-slate-500 font-mono">${childCountText}</span>` : ''}
+        
+        ${!isComplex ? `<span class="text-slate-200 font-mono break-all">${escapeHtml(JSON.stringify(value))}</span>` : ''}
+
+        <!-- Hover Actions -->
+        <div class="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
+          <button class="btn-copy-path px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 flex items-center gap-1" title="Copy JSONPath (${jsonPath})">
+            <i data-lucide="route" class="w-3 h-3 text-sky-400"></i> Path
+          </button>
+          <button class="btn-copy-val px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 flex items-center gap-1" title="Copy Node Value">
+            <i data-lucide="copy" class="w-3 h-3"></i> Value
+          </button>
+        </div>
+      `;
+
+      node.appendChild(header);
+
+      // Children Container for Objects/Arrays
+      if (isComplex) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = "tree-children pl-5 border-l border-slate-800 flex flex-col gap-0.5 hidden";
+
+        const entries = isArray ? value.entries() : Object.entries(value);
+        for (const [k, v] of entries) {
+          const childPath = isArray ? `${jsonPath}[${k}]` : `${jsonPath}.${k}`;
+          childrenContainer.appendChild(buildTreeNode(String(k), v, childPath));
+        }
+
+        node.appendChild(childrenContainer);
+
+        // Click to toggle expansion
+        const toggleBtn = header.querySelector('.tree-toggle');
+        toggleBtn.addEventListener('click', () => {
+          const isHidden = childrenContainer.classList.contains('hidden');
+          const chevron = header.querySelector('.tree-chevron');
+          if (isHidden) {
+            childrenContainer.classList.remove('hidden');
+            if (chevron) chevron.style.transform = 'rotate(90deg)';
+          } else {
+            childrenContainer.classList.add('hidden');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+          }
+        });
+
+        // Expand automatically if search query matches inside
+        if (treeSearchQuery && (isMatched || childrenContainer.querySelectorAll('.ring-sky-500\\/50').length > 0)) {
+          childrenContainer.classList.remove('hidden');
+          const chevron = header.querySelector('.tree-chevron');
+          if (chevron) chevron.style.transform = 'rotate(90deg)';
+        }
+      }
+
+      // Copy Handlers
+      header.querySelector('.btn-copy-path').addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyToClipboard(jsonPath, `Copied JSONPath: ${jsonPath}`);
+      });
+
+      header.querySelector('.btn-copy-val').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const valStr = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+        copyToClipboard(valStr, `Copied value for ${key}`);
+      });
+
+      return node;
+    }
+
+    function toggleAllTreeNodes(expand) {
+      document.querySelectorAll('.tree-children').forEach(el => {
+        if (expand) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      });
+      document.querySelectorAll('.tree-chevron').forEach(el => {
+        el.style.transform = expand ? 'rotate(90deg)' : 'rotate(0deg)';
+      });
+    }
+
+    // --- MINIFIED VIEW RENDERER ---
+    function renderMinifiedView(originalByteSize) {
+      if (!parsedJson) return;
+      
+      const minified = JSON.stringify(parsedJson);
+      minifiedOutput.value = minified;
+
+      const minifiedBytes = new Blob([minified]).size;
+      const savings = originalByteSize > 0 
+        ? Math.max(0, Math.round(((originalByteSize - minifiedBytes) / originalByteSize) * 100))
+        : 0;
+
+      minifiedSavingsBadge.textContent = `${savings}% Saved (${formatBytes(originalByteSize - minifiedBytes)})`;
+    }
+
+    // --- ERROR DIAGNOSTICS RENDERER ---
+    function renderErrorState(errorMsg) {
+      // Banner update
+      statusBanner.className = "transition-all duration-200 rounded-xl p-3 border flex flex-wrap items-center justify-between gap-3 bg-rose-950/40 border-rose-900/80 text-xs";
+      statusIcon.className = "h-2.5 w-2.5 rounded-full bg-rose-500 shadow shadow-rose-500/50";
+      statusTitle.className = "font-bold text-rose-300";
+      statusTitle.textContent = "Syntax Error Detected";
+      statusMessage.textContent = errorMsg;
+
+      // Extract Line/Column hints if possible
+      const posMatch = errorMsg.match(/at position (\d+)/i) || errorMsg.match(/line (\d+) column (\d+)/i);
+      
+      prettyCodeContainer.innerHTML = `
+        <div class="p-4 bg-rose-950/20 border border-rose-900/60 rounded-xl flex items-start gap-3 text-xs">
+          <i data-lucide="alert-circle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+          <div class="flex flex-col gap-1">
+            <h4 class="font-bold text-rose-300">Invalid JSON Structure</h4>
+            <p class="font-mono text-rose-200/90 leading-relaxed">${escapeHtml(errorMsg)}</p>
+            <p class="text-slate-400 mt-2">Use the <span class="text-indigo-400 font-semibold cursor-pointer underline" onclick="runAutoFix()">"Auto-Fix"</span> button above to automatically repair loose JSON syntax like trailing commas or unquoted keys.</p>
+          </div>
+        </div>
+      `;
+
+      treeContainer.innerHTML = `<div class="p-4 text-xs text-rose-400">// Unable to build interactive tree due to syntax errors.</div>`;
+      minifiedOutput.value = `// Syntax error: ${errorMsg}`;
+      minifiedSavingsBadge.textContent = "0% Saved";
+
+      lucide.createIcons();
+    }
+
+    function renderEmptyState() {
+      statusBanner.className = "transition-all duration-200 rounded-xl p-3 border flex flex-wrap items-center justify-between gap-3 bg-slate-900 border-slate-800 text-xs";
+      statusIcon.className = "h-2.5 w-2.5 rounded-full bg-slate-500";
+      statusTitle.className = "font-bold text-slate-300";
+      statusTitle.textContent = "Empty Input Payload";
+      statusMessage.textContent = "Paste or type JSON into the input pane.";
+
+      statKeys.textContent = "0";
+      statDepth.textContent = "0";
+      statSize.textContent = "0 B";
+
+      prettyCodeContainer.innerHTML = '<span class="text-slate-600">// Formatted JSON output will appear here...</span>';
+      treeContainer.innerHTML = '<span class="text-slate-600">// Interactive tree nodes will appear here...</span>';
+      minifiedOutput.value = '';
+    }
+
+    // --- UTILITIES: COPY & EXPORT ---
+    function copyCurrentOutput() {
+      let targetText = '';
+      if (currentTab === 'pretty') {
+        const indentStr = typeof activeIndent === 'number' ? ' '.repeat(activeIndent) : '\t';
+        targetText = parsedJson ? JSON.stringify(parsedJson, null, indentStr) : rawInputText;
+      } else if (currentTab === 'minified') {
+        targetText = minifiedOutput.value;
+      } else {
+        targetText = parsedJson ? JSON.stringify(parsedJson, null, 2) : rawInputText;
+      }
+
+      copyToClipboard(targetText, 'Output JSON copied to clipboard!');
+    }
+
+    function exportJsonFile() {
+      if (!parsedJson) {
+        showToast('No valid JSON to export');
+        return;
+      }
+
+      const indentStr = typeof activeIndent === 'number' ? ' '.repeat(activeIndent) : '\t';
+      const content = JSON.stringify(parsedJson, null, indentStr);
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payload_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('Exported .json file!');
+    }
+
+    function copyToClipboard(text, message) {
+      if (!text) return;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast(message));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast(message);
+        } catch (e) {
+          showToast('Failed to copy text');
+        }
+        document.body.removeChild(ta);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.remove('translate-y-10', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-10', 'opacity-0');
+      }, 2500);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return String(str);
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
