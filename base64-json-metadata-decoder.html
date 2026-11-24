@@ -56,6 +56,51 @@
     .syntax-number { color: #facc15; }
     .syntax-boolean { color: #f472b6; }
     .syntax-null { color: #94a3b8; }
+
+    footer {
+      flex-shrink: 0;
+      border-top: 1px solid #1e293b;
+      background: #0b1120;
+    }
+
+    .footer-inner {
+      width: min(100% - 32px, 1850px);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 0;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .footer-inner a {
+      color: #7dd3fc;
+      text-decoration: none;
+    }
+
+    .footer-inner a:hover,
+    .footer-inner a:focus-visible {
+      color: #bae6fd;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (min-width: 761px) and (min-height: 600px) {
+      .footer-inner {
+        padding: 13px 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .footer-inner {
+        width: calc(100% - 28px);
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
@@ -223,6 +268,16 @@
       </div>
     </div>
   </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Jsonix · API &amp; JSON tools</span>
+      <span>
+        Designed &amp; developed by
+        <a href="https://venkataranjit.netlify.app/" target="_blank" rel="noopener noreferrer">Venkata Ranjit</a>
+      </span>
+    </div>
+  </footer>
 
   <!-- Toast Notification Container -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-cyan-500/40 shadow-xl shadow-cyan-950/50 text-xs font-medium">
