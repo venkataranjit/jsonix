@@ -4,6 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jsonix — JSON Formatter, Validator &amp; Tree Inspector</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-S4K72ZTYC2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", "G-S4K72ZTYC2");
+
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      const button = target && target.closest("button[id], button[class*='btn-copy-']");
+      if (!button) return;
+
+      const copyAction = Array.from(button.classList).find((name) => name.startsWith("btn-copy-"));
+      const action = button.id || copyAction;
+      if (action) gtag("event", "tool_action", { action });
+    });
+
+    let inputTrackingTimer;
+    document.addEventListener("input", (event) => {
+      if (event.target.id !== "jsonInput") return;
+      window.clearTimeout(inputTrackingTimer);
+      inputTrackingTimer = window.setTimeout(() => gtag("event", "tool_input"), 1000);
+    });
+  </script>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>

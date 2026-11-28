@@ -55,4 +55,4 @@ python -m http.server 8000
 
 ## Privacy
 
-Jsonix processes pasted input locally in the browser. It does not require an account or application server. External CDN resources are used for the Tailwind CSS, fonts, and Lucide icons shown in the interface.
+Jsonix processes pasted input locally in the browser; JSON and API contents are not sent to analytics. Google Analytics 4 records page views, tool input activity, and identified button actions. The site does not require an account or application server. External CDN resources are used for Google Analytics, Tailwind CSS, fonts, and Lucide icons shown in the interface.
